@@ -1,0 +1,6 @@
+framework module Pods_SourceryApi {
+  umbrella header "Pods-SourceryApi-umbrella.h"
+
+  export *
+  module * { export * }
+}

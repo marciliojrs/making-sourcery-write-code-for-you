@@ -1,0 +1,41 @@
+import Foundation
+{% for type in types.implementing.AutoRequestable|protocol %}
+    
+struct {{type.name|replace:"Protocol",""}}: {{type.name}} {
+    private let builder: URLBuilder
+
+    init() {
+        builder = try! URLBuilder(baseUrl: "{{type.annotations.baseUrl}}")
+    }
+
+    {% for method in type.methods %}    
+    {% if not method.annotations == nil %}
+    func {{method.name}} {
+        let url = builder
+        {% if method.annotations.path %}
+            .set(path: "{{method.annotations.path}}")
+        {% endif %}
+        {% if method.annotations.method %}
+            .set(httpMethod: {{method.annotations.method}})
+        {% endif %}
+        {% if method.annotations.content-type %}
+            .set(httpHeader: HttpHeader(key: "Content-Type", value: "{{method.annotations.content-type}}"))
+        {% endif %}
+        {% if type.annotations.token %}
+            .set(httpHeader: HttpHeader(key: "Authorization", value: "Bearer {{type.annotations.token}}"))
+        {% endif %}
+            .build()
+
+        URLSession.shared.dataTask(with: url) { (data, _, error) in
+            guard let data = data else {
+                completion(.failure(error!))
+                return
+            }
+            let response = try! JSONDecoder().decode({{method.annotations.response}}.self, from: data)
+            completion(.success(response))
+        }.resume()
+    }
+    {% endif %}
+    {% endfor %}
+}
+{% endfor %}
